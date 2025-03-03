@@ -7,7 +7,7 @@ app.register(refoundRoutes)
 
 const start = async () => {
   try {
-    await app.listen({ port: 3040 });
+    await app.listen({ port: 3060 });
     console.log('🚀 Server is Running!');
   } catch (err) {
     console.error(err);
