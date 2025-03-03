@@ -1,8 +1,14 @@
 import fastify from 'fastify';
+import cors from '@fastify/cors';
 import { refoundRoutes } from './routes/refoundRoutes';
-import db from './database/connection.js'; 
+import db from './database/connection.js';
 
 const app = fastify();
+
+app.register(cors, {
+  origin: '*', 
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+});
 
 app.decorate('db', db);
 
