@@ -1,26 +1,35 @@
 import fs from "fs";
 import csv from "csv-parser";
-import db from "../database/connection.js";
+import { fileURLToPath } from "url";
+import path from "path";
 
-export function salesImport() {
+// Converte o caminho do módulo ES para um caminho absoluto
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Constrói o caminho absoluto para o arquivo CSV
+const filePath = path.resolve(__dirname, "./vendas_e_devolucoes.csv");
+
+export function salesImport(db) {
   class SaleMovement {
-    constructor(cd_produto, cd_empresa, in_estorno, nr_dctoorigem) {
+    constructor(cd_produto, cd_empresa, in_estorno, nr_dctoorigem, value) {
       this.cd_produto = cd_produto;
       this.cd_empresa = cd_empresa;
       this.in_estorno = in_estorno === "T";
-      this.nr_dctoorigem = isNaN(parseInt(nr_dctoorigem)) ? null : parseInt(nr_dctoorigem);
+      this.nr_dctoorigem = nr_dctoorigem;
+      this.value = value
     }
 
     insertDatabase() {
       return new Promise((resolve, reject) => {
         const insertQuery = `
-          INSERT INTO sales (product_id, store_id, is_sales_reversal, doc_origin) 
-          VALUES (?, ?, ?, ?)
+          INSERT INTO sales (product_id, store_id, is_sales_reversal, doc_origin, value) 
+          VALUES (?, ?, ?, ?, ?)
         `;
 
         db.run(
           insertQuery,
-          [this.cd_produto, this.cd_empresa, this.in_estorno ? 1 : 0, this.nr_dctoorigem],
+          [this.cd_produto, this.cd_empresa, this.in_estorno ? 1 : 0, this.nr_dctoorigem, this.value],
           (err) => {
             if (err) {
               console.error("Erro ao inserir venda no banco:", err.message);
@@ -37,14 +46,21 @@ export function salesImport() {
   const insertSales = async () => {
     const salesPromises = [];
 
-    fs.createReadStream("./vendas_e_devoluções.csv")
+    // Verifica se o arquivo existe antes de tentar lê-lo
+    if (!fs.existsSync(filePath)) {
+      console.error(`Arquivo CSV não encontrado: ${filePath}`);
+      return;
+    }
+
+    fs.createReadStream(filePath)
       .pipe(csv())
       .on("data", (row) => {
         const saleMovement = new SaleMovement(
           row.cd_produto,
           row.cd_empresa,
           row.in_estorno,
-          row.nr_dctoorigem
+          row.nr_dctoorigem,
+          row.round
         );
 
         salesPromises.push(saleMovement.insertDatabase());
@@ -55,8 +71,6 @@ export function salesImport() {
           console.log("Leitura do arquivo concluída e dados inseridos com sucesso.");
         } catch (error) {
           console.error("Erro ao processar o arquivo CSV:", error);
-        } finally {
-          db.close();
         }
       })
       .on("error", (err) => {
@@ -66,5 +80,3 @@ export function salesImport() {
 
   insertSales();
 }
-
-salesImport()
