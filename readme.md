@@ -8,7 +8,7 @@
 1.  Clone o repositório:
 
     ```bash
-    git clone [https://github.com/LeandroPivovar/teste-dajulabs.git](https://github.com/LeandroPivovar/teste-dajulabs.git)
+    git clone https://github.com/LeandroPivovar/teste-dajulabs.git
     ```
 
 2.  Entre no diretório do projeto:
